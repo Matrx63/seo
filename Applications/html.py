@@ -1,24 +1,13 @@
 #!/usr/bin/python
 import os
 import platform
+from pattern.graph  import Graph
+from pattern.en import Text
 
-def open_html_file(file_name):
-    if file_name == "monogramme":
-        file = open('/home/matrx63/Web/monogramme.html', 'w');
-        make_head(file, "Monogramme");
+def open_html_file():
+        file = open('/home/matrx63/Web/n-grams.html', 'w');
+        _make_head(file, "n-grams");
         return file
-
-    if file_name == "bigramme":
-        file = open('/home/matrx63/Web/bigramme.html', 'w');
-        make_head(file, "Bigramme");
-        return file
-
-    if file_name == "trigramme":
-        file = open('/home/matrx63/Web/trigramme.html', 'w');
-        make_head(file, "Trigramme");
-        return file
-        
-    return None
     
 def close_html_file(file):
     file.write("""
@@ -28,10 +17,24 @@ def close_html_file(file):
     </html>
     """)
     file.close()
-    
     return None
 
-def make_head(file, title):
+def make_graph(dgram, n, numWord):
+    if n == 1:
+        graph = Graph(distance=4.0)
+        center = graph.add_node(' ', radius=0)
+        center.fill = (0,0,0,0)
+        for gram in dgram:
+            key = gram
+            w = dgram[gram] / numWord
+            node = graph.add_node(key, centrality=w, radius=dgram[gram] + 1)
+            node.fill = (0, 0.5, 1, node.radius * 0.1)
+            graph.add_edge(center, node, length=2000/node.radius, stroke=(0,0,0,0)) # R,G,B,A
+        graph.export('/home/matrx63/Web/monogram', pack=False, width='2000', height='2000', frames=5000, ipf=30)
+        
+    
+
+def _make_head(file, title):
     file.write("""<!DOCTYPE html>
     <html lang="en">
     <head>  <meta charset="utf-8">
@@ -47,30 +50,16 @@ def make_head(file, title):
       <div id="container">
         <div id="main" role="main"  class="hellobox" >
         <h1>""")
-    file.write(title);
+    file.write(title)
     file.write("""</h1>
     <h2>From Google News 
     </h2> </div>
     <nav>
     	<ul>
           <li><a href="index.html">Home</a></li>
-          <li><a """)
-    if title == "Monogramme":
-        file.write(""" class="active" """)
-    
-    file.write(""" href="monogramme.html">Monogramme</a></li>
-          <li><a """)
-          
-    if title == "Bigramme":
-        file.write(""" class="active" """)
-    
-    file.write(""" href="bigramme.html">Bigramme</a></li>
-          <li><a """)
-          
-    if title == "Trigramme":
-        file.write(""" class="active" """)
-    
-    file.write(""" href="trigramme.html">Trigramme</a></li>
+          <li><a class="active" href="n-grams.html">""")
+    file.write(title)
+    file.write("""</a></li>
     	</ul>    
     </nav>
     <footer>

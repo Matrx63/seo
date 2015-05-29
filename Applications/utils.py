@@ -12,7 +12,7 @@ def check_ncl(a):
 	#On recupere le cluster
 	o =  a[e:i]
 	#On reconstruit l url du cluster
-	u = 'http://news.google.fr/news/story?' + o + '&output=rss'
+	u = 'http://news.google.com/news/story?' + o + '&output=rss'
 	return u
 
 def check_news(a):

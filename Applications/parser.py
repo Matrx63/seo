@@ -5,16 +5,22 @@ import feedparser
 import utils
 import html
 import array
+from nltk.corpus import stopwords
 from goose import Goose
 g = Goose()
 from textblob import Word,TextBlob
-from textblob_fr import PatternTagger, PatternAnalyzer
+from textblob.taggers import NLTKTagger
+from pattern.vector import count, LEMMA
+from pattern.en import parse,Sentence,Text,ngrams
+from pattern.graph import Graph
 
-f1 = html.open_html_file("monogramme")
-f2 = html.open_html_file("bigramme")
-f3 = html.open_html_file("trigramme")
+reload(sys)  
+sys.setdefaultencoding('utf8')
 
-rss = "https://news.google.fr/news/feeds?tbm=nws&q="+sys.argv[1] 
+
+f = html.open_html_file()
+
+rss = "https://news.google.fr/news/feeds?tbm=nws&hl=en&q="+sys.argv[1] 
 #On recupere tous le contenu du rss avec une query
 feeds = feedparser.parse(rss)
 check = ""
@@ -41,15 +47,48 @@ for article in news:
 	a = g.extract(url=article)
 	articles.append(a.cleaned_text)
 
-#On lemmatize et ensuite on calcul les ngrammes (mono, bi, tri)
-for article in articles:
-	blobs = TextBlob(article, pos_tagger=PatternTagger(), analyzer=PatternAnalyzer())
-	for sentence in blobs.sentences:
-		tri = sentence.ngrams(n=3)
-		for mono in tri:
-			f3.write(" ".join(mono).encode('utf-8'))
-			f3.write("\n")
+stopwordsList = stopwords.words('english');
 
-html.close_html_file(f1)
-html.close_html_file(f2)
-html.close_html_file(f3)
+#On lemmatize et ensuite on calcul les ngrammes (mono, bi, tri)
+
+'''
+s = 'The black cat was spying on the white cat.'
+s = Sentence(parse(s))
+k=count(s, stemmer=LEMMA, exclude=['.', ','])
+f3.write('\n'.join("{!s}={!r}".format(key,val) for (key,val) in k.items()))
+exclude=[' ', '/', '.', ',', ';', ':', '!', '?', '(', ')', '[', ']', '{', '}', '\'', '`', '"', '@', '#', '$', '*', '+', '-', '|', '=', '~', '_', '...']
+'''
+
+dict = {}
+
+from nltk.corpus import stopwords
+cachedStopWords = stopwords.words("english")
+
+for article in articles:
+    text = TextBlob(article)
+    for sentence in text.sentences:
+        s = Sentence(parse(''.join(sentence), lemmata=True))
+        for i in range (1, len(s.words)):
+            k = ngrams(' '.join([word for word in s.lemmata if word not in cachedStopWords]), n=i, punctuation=".,;:!?()[]{}`'\"@#$^&*+-|=~_", continuous=False)
+            if i not in dict:
+                dict[i] = {}
+            for kgram in k:
+                if i > 1:
+                    key = '#'.join(unkgram for unkgram in kgram)
+                else:
+                    key = kgram[0]
+                if key in dict[i]:
+                    dict[i][key] += 1
+                else:
+                    dict[i][key] = 1
+
+for dgram in dict:
+    html.make_graph(dict[dgram], dgram, 1000)
+    for key in dict[dgram]:
+        f.write(key.encode('utf-8').replace("#", ", "))
+        f.write(' : ')
+        f.write(str(dict[dgram][key]))
+        f.write('<br>')
+    f.write('_____________________________________________________________<br><br>')
+
+html.close_html_file(f)
